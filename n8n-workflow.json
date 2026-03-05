@@ -1,0 +1,628 @@
+{
+  "name": "Internship Project",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b59b919c-1d82-441c-9b77-fa2ab8250750",
+              "name": "domain",
+              "type": "string",
+              "value": "https://www.crowdwisdomtrading.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "261c61c9-5ec0-43c4-a1a2-e7502d90e1e9",
+      "name": "Edit Fields",
+      "position": [
+        624,
+        -112
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.domain }}",
+        "options": {}
+      },
+      "id": "7691965b-d908-449b-a965-142006d92404",
+      "name": "HTTP Request",
+      "position": [
+        816,
+        16
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional marketing strategist.\\n\\nBased on the following information:\\n\\nWebsite Information:\\n{{ $node[\"HTTP Request\"].json.data }}\\n\\n\\nMarket Research:\\n{{ $node[\"Tavily Research\"].json.results }}\\n\\nCreate:\\n\\n1) A powerful 5-second hook for a video advertisement.\\n2) A storyboard with exactly 4 scenes.\\nEach scene should be 8 seconds long.\\n\\nIMPORTANT:\\nReturn ONLY valid JSON.\\nDo NOT include explanations.\\nDo NOT include markdown.\\nDo NOT include text outside JSON.\\n\\nFormat exactly like this:\\n\\n{\\n  \"hook\": \"string\",\\n  \"scenes\": [\\n    {\\n      \"scene_number\": 1,\\n      \"description\": \"string\",\\n      \"visuals\": \"string\"\\n    },\\n    {\\n      \"scene_number\": 2,\\n      \"description\": \"string\",\\n      \"visuals\": \"string\"\\n    },\\n    {\\n      \"scene_number\": 3,\\n      \"description\": \"string\",\\n      \"visuals\": \"string\"\\n    },\\n    {\\n      \"scene_number\": 4,\\n      \"description\": \"string\",\\n      \"visuals\": \"string\"\\n    }\\n  ]\\n}\\n",
+        "batching": {}
+      },
+      "id": "e7ecb1fe-0256-488c-87bd-39ca90f383aa",
+      "name": "Basic LLM Chain",
+      "position": [
+        1312,
+        -64
+      ],
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "749c3518-02f1-4b1e-af96-12957de8a710",
+      "name": "Google Gemini Chat Model",
+      "position": [
+        1440,
+        176
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "q4cK45KjIlyxgOwy",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"What does crowdwisdomtrading.com do and who are their customers?\",\n  \"search_depth\": \"advanced\"\n}\n",
+        "options": {}
+      },
+      "id": "3f3e32bc-7ae8-4c16-89c5-b62cf2e1ba38",
+      "name": "Tavily Research",
+      "position": [
+        1040,
+        -80
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get first incoming item\nconst input = $input.first().json;\n\n// If scenes is already an array\nif (Array.isArray(input.scenes)) {\n  return input.scenes.map(scene => ({\n    json: scene\n  }));\n}\n\n// If scenes is a string\nif (typeof input.scenes === \"string\") {\n  const parsedScenes = JSON.parse(input.scenes);\n  return parsedScenes.map(scene => ({\n    json: scene\n  }));\n}\n\n// Fallback (debug)\nreturn [{\n  json: {\n    error: \"Scenes not found\",\n    received: input\n  }\n}];\n"
+      },
+      "id": "050cb440-d391-4bf7-b5f9-1c8400653a6a",
+      "name": "Split Scenes",
+      "position": [
+        1920,
+        -48
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputItems = $input.all();\nlet rawText = inputItems[0].json.text;\n\n// Remove ```json and ``` wrappers\nrawText = rawText\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\nconst parsed = JSON.parse(rawText);\n\nreturn [\n  {\n    json: parsed\n  }\n];\n"
+      },
+      "id": "347b180e-e3fa-4588-922c-08ee5e11e963",
+      "name": "Parse Storyboard",
+      "position": [
+        1680,
+        -64
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-ad",
+        "options": {}
+      },
+      "id": "8a887cdb-385a-424a-8c57-a28526c7872a",
+      "name": "Webhook",
+      "position": [
+        336,
+        -48
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "webhookId": "43730b21-5845-4555-bed7-316b65ba4491"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the status response from HeyGen\nconst statusResponse = $input.first().json;\n\n// Extract video URL safely\nconst videoUrl = statusResponse?.data?.video_url || \"not_generated\";\n\n// Build final output object\nconst finalVideo = {\n  status: statusResponse?.data?.status || \"unknown\",\n  total_scenes: 4, // since you always generate 4 scenes\n  stitched_video_url: videoUrl,\n  brand_character: \"Maintained consistent avatar across scenes\",\n  duration: \"32 seconds (stitched)\", // 4 scenes × 8 seconds\n  generated_at: new Date().toISOString()\n};\n\nreturn [{ json: finalVideo }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3056,
+        -48
+      ],
+      "id": "3483b100-644a-411d-a8d0-455dc3b3c0da",
+      "name": "Stitch Final Video"
+    },
+    {
+      "parameters": {
+        "name": "=={{ \"final_ad_\" + Date.now() + \".txt\" }}\n",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3680,
+        -48
+      ],
+      "id": "2b18fd52-d6f9-4568-bbd5-4fe2810aba97",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "9XPheTmLuBrpd8PG",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8f9f5de3-38a3-497a-a9b3-a363c0888f88",
+              "name": "fileContent",
+              "value": "=={{ \"Status: \" + $json.status + \"\\n\" +\"Total Scenes: \" + $json.total_scenes + \"\\n\" +\"Duration: \" + $json.duration + \"\\n\" +\"Video URL: \" + $json.stitched_video_url + \"\\n\" +\"Generated At: \" + new Date().toISOString()}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3296,
+        -48
+      ],
+      "id": "0cc8ff70-ac9a-4b9f-951d-c9071218b874",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "fileContent",
+        "options": {
+          "fileName": "=={{ \"final_ad_\" + Date.now() + \".txt\" }}\n"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        3504,
+        -48
+      ],
+      "id": "79298294-374b-4d28-aee7-bc89c5206550",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "10MgqHWaECtxcTVspHX4l2MmvqQS9mgsCniEksQb-79w",
+          "mode": "list",
+          "cachedResultName": "CWT_AI_AD_LOGS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10MgqHWaECtxcTVspHX4l2MmvqQS9mgsCniEksQb-79w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10MgqHWaECtxcTVspHX4l2MmvqQS9mgsCniEksQb-79w/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ new Date().toISOString() }}",
+            "Domain": "={{ $json.domain }}",
+            "Hook": "={{ $json.hook }}",
+            "Duration": "={{ $json.duration }}",
+            "Video Link": "={{ $json.webViewLink }}",
+            "Status": "SUCCESS"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Domain",
+              "displayName": "Domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Hook",
+              "displayName": "Hook",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Duration",
+              "displayName": "Duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Video Link",
+              "displayName": "Video Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3888,
+        -48
+      ],
+      "id": "8899b31a-3cd0-4c38-9645-dcc60caeddfd",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GRyyNUNY6Yw1iGvd",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heygen.com/v2/video/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "sk_V2_hgu_k2EXRSAOeC9_TULmaszaUt21ZdFF83cKczeQsNWxh4nE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_inputs\": [\n    {\n      \"character\": {\n        \"type\": \"avatar\",\n        \"avatar_id\": \"f48550dcc6f648adacc6593f1d315234\"\n      },\n      \"voice\": {\n        \"type\": \"text\",\n        \"voice_id\": \"1704ea0565c04c5188d9b67062b31a1a\",\n        \"input_text\": \"{{ $json.description }}\"\n      }\n    }\n  ],\n  \"dimension\": {\n    \"width\": 512,\n    \"height\": 512\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2144,
+        -48
+      ],
+      "id": "121c8056-e71a-443b-8d81-a34db169e69f",
+      "name": "HeyGen Video Generation"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "24739d4e-a777-47a5-99b3-99ef765289c9",
+              "name": "video_id",
+              "value": "={{$json.data.video_id}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2384,
+        -48
+      ],
+      "id": "3c05393d-1e21-4441-ae3f-110ef38cf4f5",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2608,
+        -48
+      ],
+      "id": "527d1352-1a67-46c2-b24d-0247b37d028a",
+      "name": "Wait",
+      "webhookId": "ea5b8d31-b5d6-4ec6-ad29-5d198fc4c025"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.heygen.com/v1/video_status.get?video_id={{$json.video_id}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "=x-api-key",
+              "value": "sk_V2_hgu_k2EXRSAOeC9_TULmaszaUt21ZdFF83cKczeQsNWxh4nE"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2816,
+        -48
+      ],
+      "id": "ea89f49b-a5f7-4155-8bba-dc34a1175b54",
+      "name": "Status Check Node"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Parse Storyboard",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "HTTP Request",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Tavily Research",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Parse Storyboard": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Split Scenes",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Split Scenes": {
+      "main": [
+        [
+          {
+            "node": "HeyGen Video Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily Research": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Basic LLM Chain",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Edit Fields",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Stitch Final Video": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HeyGen Video Generation": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Status Check Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Check Node": {
+      "main": [
+        [
+          {
+            "node": "Stitch Final Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "d0a13551-d813-41c1-896e-b3bdca53173c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f108db3e251e39cd41eda680a2daf2b97d06e6aded387fed33e53b6d2425774"
+  },
+  "id": "U4hcnwSuftwT0kVe",
+  "tags": []
+}
