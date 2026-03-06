@@ -51,7 +51,7 @@ Google Sheets Logging
 
 ## Demo
 
-See demo video inside `/demo`.
+See demo video inside Workflow Demo Video.
 
 ---
 
