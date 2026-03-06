@@ -37,6 +37,23 @@ Google Drive Save
 Google Sheets Logging
 
 ---
+## Workflow Architecture
+
+The automation pipeline works as follows:
+
+1. User inputs a company domain.
+2. Tavily searches the web for product information.
+3. Tavily researches ICP (Ideal Customer Profile) and pain points.
+4. AI Agent generates marketing hooks and ad ideas.
+5. AI Agent creates a storyboard for a short ad.
+6. Scenes are automatically broken down.
+7. HeyGen API generates video scenes with a consistent avatar.
+8. Scenes are stitched into a single marketing video.
+9. Final output is saved to Google Drive.
+10. Logs are stored in Google Sheets.
+
+---
+
 
 ## Tech Stack
 
