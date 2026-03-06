@@ -15,7 +15,7 @@ The system researches a company, identifies customer pain points, generates ad i
 - Video generation via HeyGen API
 - Google Drive storage
 - Google Sheets logging
-
+- Used MCP server and created the whole workflow and in particularly using Antigravity.
 ---
 
 ## Workflow
@@ -63,7 +63,8 @@ The automation pipeline works as follows:
 - HeyGen API
 - Google Drive API
 - Google Sheets API
-
+- Antigravity
+- MCP Servers
 ---
 
 ## Demo
